@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Book Recommender System</title>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+</head>
+<style>
+    .card {
+        background-color: wheat;
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        margin-bottom: 20px;
+        height: 400px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .card img {
+        width: 150px;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 10px;
+        margin: 0 auto;
+    }
+    .card-title {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+    }
+    .card-text {
+        font-size: 1em;
+        margin-bottom: 5px;
+    }
+    .navbar-brand, .nav > li > a {
+        color: white !important;
+    }
+    .nav > li > a:hover {
+        color: indigo !important;
+    }
+</style>
+<body>
+
+    <nav class="navbar" style="background-color: indigo">
+        <a class="navbar-brand">My Book Recommender</a>
+        <ul class="nav navbar-nav">
+            <li><a href="/">Home</a></li>
+            <li><a href="/recommend">Recommend</a></li>
+            <li><a>Contact</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <h1 style="font-size: 50px">Top 50 Books</h1>
+            </div>
+
+            {% for i in range(book_name|length) %}
+                <div class="col-md-3" style="margin-top: 50px">
+                    <div class="card">
+                        <img class="card-img-top" src="{{ image[i] }}">
+                        <div class="card-body">
+                            <h4 class="card-title">{{ book_name[i] }}</h4>
+                            <p class="card-text">{{ author[i] }}</p>
+                            <p class="card-text">Votes - {{ votes[i] }}</p>
+                            <p class="card-text">Rating - {{ rating[i] }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+        </div>
+    </div>
+
+</body>
+</html>
