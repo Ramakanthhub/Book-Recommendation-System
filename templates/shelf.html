@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Study Shelf - Student Book Recommender</title>
+  <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body>
+
+  <!-- Sticky Glass Navbar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-brand">
+        <span class="brand-icon">🎓</span>
+        <span>EduBook<span class="text-gradient">AI</span></span>
+        <span class="nav-badge">Student Edition</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="/" class="nav-link"><span>🏠</span> Home</a></li>
+        <li><a href="/recommend" class="nav-link"><span>🔍</span> Recommend</a></li>
+        <li><a href="/tracks" class="nav-link"><span>🗺️</span> Syllabus Tracks</a></li>
+        <li><a href="/goals" class="nav-link"><span>🎯</span> Goal Matcher</a></li>
+        <li><a href="/community" class="nav-link"><span>🏛️</span> Community</a></li>
+        <li><a href="/shelf" class="nav-link active"><span>📚</span> Study Shelf <span id="shelfCountBadge" class="shelf-count" style="display:none;">0</span></a></li>
+        <li><a href="/contact" class="nav-link"><span>✉️</span> Contact</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <!-- Pomodoro Focus Timer Widget -->
+        <div class="pomodoro-widget" title="Pomodoro Focus Timer">
+          <span>⏱️</span>
+          <span id="pomodoroTime" class="pomodoro-time">25:00</span>
+          <button id="pomodoroToggleBtn" class="pomodoro-btn" title="Start/Pause">▶</button>
+          <button id="pomodoroResetBtn" class="pomodoro-btn" title="Reset">↺</button>
+        </div>
+
+        <button id="themeToggleBtn" class="theme-toggle" title="Toggle Theme">☀️</button>
+        <a href="mailto:recommand@gmail.com" class="contact-chip" title="Contact Ramakanth">
+          <span>📬</span>
+          <span>Ramakanth</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="container" style="padding-top: 2.5rem;">
+    
+    <!-- Shelf Header & Stats -->
+    <div class="shelf-header">
+      <div>
+        <span class="hero-pill">📖 Personal Learning Tracker</span>
+        <h1 class="section-title">My Study <span class="text-gradient">Shelf</span></h1>
+        <p class="section-desc">Track your curriculum reading, syllabus materials, and recommended books.</p>
+      </div>
+
+      <div class="shelf-stats">
+        <div class="stat-item">
+          <div id="statTotalBooks" class="stat-number">0</div>
+          <div class="stat-label">Saved Books</div>
+        </div>
+        <div class="stat-item">
+          <div id="statEstHours" class="stat-number">0h</div>
+          <div class="stat-label">Est. Study Time</div>
+        </div>
+        <div class="stat-item">
+          <div id="statReading" class="stat-number">0</div>
+          <div class="stat-label">Reading Now</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shelf Actions & Filters -->
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+      <div class="category-tabs" style="margin: 0; padding: 0;">
+        <button class="tab-btn active" data-status="all">All Books</button>
+        <button class="tab-btn" data-status="want_to_study">Want to Study</button>
+        <button class="tab-btn" data-status="reading">Reading Now</button>
+        <button class="tab-btn" data-status="mastered">Mastered</button>
+      </div>
+
+      <div style="display: flex; gap: 0.6rem;">
+        <button id="exportShelfBtn" class="btn-secondary" style="display: flex; align-items: center; gap: 0.35rem;">
+          <span>📥</span> Export Reading List
+        </button>
+        <button id="clearShelfBtn" class="btn-secondary" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+          <span>🗑</span> Clear All
+        </button>
+      </div>
+    </div>
+
+    <!-- Books Grid Container -->
+    <div id="shelfBooksGrid" class="books-grid">
+      <!-- Injected via JavaScript -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyShelfState" class="empty-state" style="display: none;">
+      <div class="empty-icon">📚</div>
+      <h2>Your Study Shelf is Empty</h2>
+      <p style="margin: 0.5rem 0 1.5rem; max-width: 450px; margin-left: auto; margin-right: auto;">
+        Save recommended books or syllabus reading materials to organize your study plan.
+      </p>
+      <a href="/" class="search-btn" style="display: inline-flex; position: static;">
+        Browse Recommended Books
+      </a>
+    </div>
+
+  </div>
+
+  <script src="/static/js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      renderShelf();
+
+      // Status filter buttons
+      const filterBtns = document.querySelectorAll('[data-status]');
+      filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          filterBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderShelf(btn.getAttribute('data-status'));
+        });
+      });
+
+      // Clear Shelf
+      document.getElementById('clearShelfBtn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to clear your entire Study Shelf?')) {
+          saveShelf([]);
+          renderShelf();
+          showToast('Study shelf cleared.');
+        }
+      });
+
+      // Export Markdown List
+      document.getElementById('exportShelfBtn').addEventListener('click', () => {
+        const shelf = getShelf();
+        if (!shelf.length) {
+          showToast('No books to export.');
+          return;
+        }
+        let md = `# 🎓 My Student Reading & Study List\nGenerated on ${new Date().toLocaleDateString()}\n\n`;
+        shelf.forEach((b, i) => {
+          md += `### ${i + 1}. ${b.title}\n`;
+          md += `- **Author:** ${b.author}\n`;
+          md += `- **Status:** ${b.status || 'Want to Study'}\n`;
+          md += `- **Rating:** ${b.rating} / 10\n\n`;
+        });
+
+        const blob = new Blob([md], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'student_reading_list.md';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Exported reading list (.md)!');
+      });
+    });
+
+    function renderShelf(filterStatus = 'all') {
+      const shelf = getShelf();
+      const grid = document.getElementById('shelfBooksGrid');
+      const emptyState = document.getElementById('emptyShelfState');
+
+      // Update statistics
+      document.getElementById('statTotalBooks').textContent = shelf.length;
+      document.getElementById('statEstHours').textContent = `${shelf.length * 6}h`;
+      const readingCount = shelf.filter(b => b.status === 'reading').length;
+      document.getElementById('statReading').textContent = readingCount;
+
+      const filtered = filterStatus === 'all' ? shelf : shelf.filter(b => (b.status || 'want_to_study') === filterStatus);
+
+      if (!filtered.length) {
+        grid.style.display = 'none';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      grid.style.display = 'grid';
+      emptyState.style.display = 'none';
+      grid.innerHTML = '';
+
+      filtered.forEach((book, idx) => {
+        const card = document.createElement('div');
+        card.className = 'book-card';
+        card.innerHTML = `
+          <div class="card-top">
+            <div class="book-cover-wrapper">
+              <img src="${book.image || ''}" alt="${book.title}" class="book-cover" onerror="handleImageFallback(this, '${escapeHtml(book.title)}')">
+            </div>
+            <button class="bookmark-btn saved" data-title="${escapeHtml(book.title)}" title="Remove from shelf">★</button>
+          </div>
+
+          <div class="card-info">
+            <h3 class="book-title" title="${escapeHtml(book.title)}">${escapeHtml(book.title)}</h3>
+            <p class="book-author">by ${escapeHtml(book.author)}</p>
+
+            <div style="margin: 0.5rem 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                <label style="font-size: 0.78rem; color: var(--text-muted); font-weight: 700;">STUDY STATUS</label>
+                <span style="font-size: 0.75rem; color: var(--accent-primary); font-weight: 700;">${book.progress || 0}% Done</span>
+              </div>
+              <select class="status-select" data-title="${escapeHtml(book.title)}" style="width: 100%; padding: 0.45rem; background: var(--bg-surface-elevated); color: var(--text-primary); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-size: 0.85rem;">
+                <option value="want_to_study" ${book.status === 'want_to_study' ? 'selected' : ''}>🎯 Want to Study</option>
+                <option value="reading" ${book.status === 'reading' ? 'selected' : ''}>📖 Reading Now</option>
+                <option value="mastered" ${book.status === 'mastered' ? 'selected' : ''}>✅ Mastered</option>
+              </select>
+            </div>
+
+            <!-- Reading Progress Bar & Slider -->
+            <div style="margin: 0.4rem 0;">
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" style="width: ${book.progress || (book.status === 'mastered' ? 100 : (book.status === 'reading' ? 45 : 0))}%;"></div>
+              </div>
+              <input 
+                type="range" 
+                min="0" 
+                max="100" 
+                value="${book.progress || (book.status === 'mastered' ? 100 : (book.status === 'reading' ? 45 : 0))}" 
+                class="progress-slider" 
+                data-title="${escapeHtml(book.title)}" 
+                style="width: 100%; cursor: pointer; accent-color: var(--accent-primary);"
+                title="Update reading progress percentage"
+              >
+            </div>
+
+            <!-- Study Notes Area -->
+            <div style="margin-top: 0.4rem;">
+              <textarea 
+                class="shelf-notes-input" 
+                data-title="${escapeHtml(book.title)}" 
+                placeholder="Write course notes, syllabus chapter tags, or key takeaways..."
+              >${escapeHtml(book.notes || '')}</textarea>
+            </div>
+
+            <div class="meta-row" style="margin-top: 0.6rem;">
+              <span class="rating-badge">★ ${book.rating || '4.5'}</span>
+              <span class="votes-badge">Est. ~6 hrs</span>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <form action="/recommend_books" method="POST" style="flex: 1;">
+              <input type="hidden" name="user_input" value="${escapeHtml(book.title)}">
+              <button type="submit" class="btn-recommend" style="width: 100%;">
+                <span>🔍</span> Similar
+              </button>
+            </form>
+            <button 
+              type="button"
+              class="btn-ai-brief" 
+              data-title="${escapeHtml(book.title)}" 
+              data-author="${escapeHtml(book.author)}" 
+              title="View AI Concept Brief & Prompts"
+            >
+              <span>⚡ Brief</span>
+            </button>
+            <button 
+              type="button"
+              class="btn-flashcards" 
+              data-title="${escapeHtml(book.title)}" 
+              data-author="${escapeHtml(book.author)}" 
+              title="Interactive Active-Recall Flashcards"
+            >
+              <span>🎴 Quiz</span>
+            </button>
+            <button 
+              type="button" 
+              class="btn-secondary cite-btn" 
+              data-title="${escapeHtml(book.title)}" 
+              data-author="${escapeHtml(book.author)}" 
+              data-year="2020" 
+              data-publisher="Academic Press"
+              title="Generate APA, MLA, Chicago citation"
+            >
+              📝 Cite
+            </button>
+            <a href="https://openlibrary.org/search?q=${encodeURIComponent(book.title)}" target="_blank" rel="noopener" class="btn-secondary" title="Search Open Library">
+              <span>📖 Free</span>
+            </a>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      // Handle status select changes
+      document.querySelectorAll('.status-select').forEach(select => {
+        select.addEventListener('change', (e) => {
+          const title = e.target.getAttribute('data-title');
+          const newStatus = e.target.value;
+          const currentShelf = getShelf();
+          const target = currentShelf.find(b => b.title.toLowerCase() === title.toLowerCase());
+          if (target) {
+            target.status = newStatus;
+            if (newStatus === 'mastered') target.progress = 100;
+            saveShelf(currentShelf);
+            showToast(`Status updated to ${newStatus.replace('_', ' ')}!`);
+            renderShelf(filterStatus);
+          }
+        });
+      });
+
+      // Handle progress slider changes
+      document.querySelectorAll('.progress-slider').forEach(slider => {
+        slider.addEventListener('input', (e) => {
+          const title = e.target.getAttribute('data-title');
+          const newProgress = parseInt(e.target.value);
+          const currentShelf = getShelf();
+          const target = currentShelf.find(b => b.title.toLowerCase() === title.toLowerCase());
+          if (target) {
+            target.progress = newProgress;
+            if (newProgress === 100) target.status = 'mastered';
+            else if (newProgress > 0 && target.status === 'want_to_study') target.status = 'reading';
+            saveShelf(currentShelf);
+            // Update progress bar fill immediately
+            const card = slider.closest('.book-card');
+            const fill = card.querySelector('.progress-bar-fill');
+            if (fill) fill.style.width = `${newProgress}%`;
+          }
+        });
+      });
+
+      // Handle study notes input auto-save
+      document.querySelectorAll('.shelf-notes-input').forEach(textarea => {
+        textarea.addEventListener('change', (e) => {
+          const title = e.target.getAttribute('data-title');
+          const newNotes = e.target.value;
+          const currentShelf = getShelf();
+          const target = currentShelf.find(b => b.title.toLowerCase() === title.toLowerCase());
+          if (target) {
+            target.notes = newNotes;
+            saveShelf(currentShelf);
+            showToast('Study notes saved! 📝');
+          }
+        });
+      });
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+  </script>
+</body>
+</html>

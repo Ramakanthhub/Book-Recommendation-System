@@ -1,78 +1,245 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <title>Book Recommender System</title>
-    <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduBook AI - Academic & Student Book Recommendation System</title>
+  <link rel="stylesheet" href="/static/css/main.css">
 </head>
-<style>
-    .card {
-        background-color: wheat;
-        border-radius: 10px;
-        padding: 15px;
-        text-align: center;
-        margin-bottom: 20px;
-        height: 400px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-    .card img {
-        width: 150px;
-        height: 200px;
-        object-fit: cover;
-        border-radius: 10px;
-        margin: 0 auto;
-    }
-    .card-title {
-        font-size: 1.5em;
-        margin-bottom: 10px;
-    }
-    .card-text {
-        font-size: 1em;
-        margin-bottom: 5px;
-    }
-    .navbar-brand, .nav > li > a {
-        color: white !important;
-    }
-    .nav > li > a:hover {
-        color: indigo !important;
-    }
-</style>
 <body>
 
-    <nav class="navbar" style="background-color: indigo">
-        <a class="navbar-brand">My Book Recommender</a>
-        <ul class="nav navbar-nav">
-            <li><a href="/">Home</a></li>
-            <li><a href="/recommend">Recommend</a></li>
-            <li><a>Contact</a></li>
-        </ul>
-    </nav>
+  <!-- Sticky Glass Navbar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-brand">
+        <span class="brand-icon">🎓</span>
+        <span>EduBook<span class="text-gradient">AI</span></span>
+        <span class="nav-badge">Student Edition</span>
+      </a>
 
-    <div class="container">
-        <div class="row">
-            <div class="col-md-12">
-                <h1 style="font-size: 50px">Top 50 Books</h1>
-            </div>
+      <ul class="nav-links">
+        <li><a href="/" class="nav-link active"><span>🏠</span> Home</a></li>
+        <li><a href="/recommend" class="nav-link"><span>🔍</span> Recommend</a></li>
+        <li><a href="/tracks" class="nav-link"><span>🗺️</span> Syllabus Tracks</a></li>
+        <li><a href="/goals" class="nav-link"><span>🎯</span> Goal Matcher</a></li>
+        <li><a href="/community" class="nav-link"><span>🏛️</span> Community</a></li>
+        <li><a href="/shelf" class="nav-link"><span>📚</span> Study Shelf <span id="shelfCountBadge" class="shelf-count" style="display:none;">0</span></a></li>
+        <li><a href="/contact" class="nav-link"><span>✉️</span> Contact</a></li>
+      </ul>
 
-            {% for i in range(book_name|length) %}
-                <div class="col-md-3" style="margin-top: 50px">
-                    <div class="card">
-                        <img class="card-img-top" src="{{ image[i] }}">
-                        <div class="card-body">
-                            <h4 class="card-title">{{ book_name[i] }}</h4>
-                            <p class="card-text">{{ author[i] }}</p>
-                            <p class="card-text">Votes - {{ votes[i] }}</p>
-                            <p class="card-text">Rating - {{ rating[i] }}</p>
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-
+      <div class="nav-actions">
+        <!-- Pomodoro Focus Timer Widget -->
+        <div class="pomodoro-widget" title="Pomodoro Focus Timer">
+          <span>⏱️</span>
+          <span id="pomodoroTime" class="pomodoro-time">25:00</span>
+          <button id="pomodoroToggleBtn" class="pomodoro-btn" title="Start/Pause">▶</button>
+          <button id="pomodoroResetBtn" class="pomodoro-btn" title="Reset">↺</button>
         </div>
+
+        <button id="themeToggleBtn" class="theme-toggle" title="Toggle Theme">☀️</button>
+        <a href="mailto:recommand@gmail.com" class="contact-chip" title="Contact Ramakanth">
+          <span>📬</span>
+          <span>Ramakanth</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section with Smart Search -->
+  <header class="hero">
+    <div class="hero-pill">
+      <span>✨ Collaborative Machine Learning + Student Curated</span>
+    </div>
+    <h1 class="hero-title">
+      Smart Book Discovery for <br><span class="text-gradient">Ambitious Students</span>
+    </h1>
+    <p class="hero-subtitle">
+      Accelerate your learning, discover syllabus companions, and explore intelligent recommendations powered by vector similarity across 700+ curated volumes.
+    </p>
+
+    <!-- Interactive Search Bar -->
+    <div class="search-wrapper">
+      <form id="searchForm" action="/recommend_books" method="POST" class="search-form">
+        <span class="search-icon">🔍</span>
+        <input 
+          id="heroSearchInput" 
+          name="user_input" 
+          type="text" 
+          class="search-input" 
+          placeholder="Search by book title (e.g. 1984, Animal Farm, The Hobbit)..." 
+          autocomplete="off"
+          required
+        >
+        <button type="submit" class="search-btn">
+          <span>Find Matches</span>
+          <span>→</span>
+        </button>
+      </form>
+      <!-- Autocomplete Dropdown Menu -->
+      <div id="searchDropdown" class="autocomplete-dropdown"></div>
     </div>
 
+    <!-- Quick Search Chips -->
+    <div class="quick-chips">
+      <span class="quick-label">⚡ Popular Student Searches:</span>
+      <button class="chip-btn" data-book="1984">1984</button>
+      <button class="chip-btn" data-book="Animal Farm">Animal Farm</button>
+      <button class="chip-btn" data-book="To Kill a Mockingbird">To Kill a Mockingbird</button>
+      <button class="chip-btn" data-book="The Hobbit : The Enchanting Prelude to The Lord of the Rings">The Hobbit</button>
+      <button class="chip-btn" data-book="The Catcher in the Rye">Catcher in the Rye</button>
+      <button class="chip-btn" data-book="Harry Potter and the Sorcerer's Stone (Book 1)">Harry Potter</button>
+    </div>
+  </header>
+
+  <!-- Curated Student Study Tracks -->
+  <section class="container" style="padding-bottom: 1.5rem;">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 1.75rem 2rem;">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; margin-bottom: 0.25rem;">🎯 Academic Discipline Tracks</h2>
+          <p style="font-size: 0.88rem; color: var(--text-secondary);">Targeted foundational reading paths for STEM, Humanities, and Business majors.</p>
+        </div>
+        <a href="/recommend" class="btn-secondary" style="font-size: 0.85rem;">Explore Full Engine →</a>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+        <div class="chip-btn" data-book="1984" style="padding: 1rem; border-radius: var(--radius-md); text-align: left; background: var(--bg-surface-elevated);">
+          <div style="font-size: 1.25rem; margin-bottom: 0.35rem;">💻</div>
+          <div style="font-weight: 700; color: var(--text-primary);">Tech & Dystopian Sci-Fi</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem;">Algorithms, 1984, Future Ethics</div>
+        </div>
+
+        <div class="chip-btn" data-book="To Kill a Mockingbird" style="padding: 1rem; border-radius: var(--radius-md); text-align: left; background: var(--bg-surface-elevated);">
+          <div style="font-size: 1.25rem; margin-bottom: 0.35rem;">⚖️</div>
+          <div style="font-weight: 700; color: var(--text-primary);">Law, Ethics & Society</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem;">Justice, Classic Literature, Civic Life</div>
+        </div>
+
+        <div class="chip-btn" data-book="The Five People You Meet in Heaven" style="padding: 1rem; border-radius: var(--radius-md); text-align: left; background: var(--bg-surface-elevated);">
+          <div style="font-size: 1.25rem; margin-bottom: 0.35rem;">🧠</div>
+          <div style="font-weight: 700; color: var(--text-primary);">Psychology & Philosophy</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem;">Human Nature, Meaning, Reflection</div>
+        </div>
+
+        <div class="chip-btn" data-book="The Da Vinci Code" style="padding: 1rem; border-radius: var(--radius-md); text-align: left; background: var(--bg-surface-elevated);">
+          <div style="font-size: 1.25rem; margin-bottom: 0.35rem;">🔍</div>
+          <div style="font-weight: 700; color: var(--text-primary);">Logic, Cryptology & History</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem;">Puzzles, Critical Deduction, Symbols</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section Header & Filter Tabs -->
+  <section class="section-header">
+    <div>
+      <h2 class="section-title">Top 50 Student & Community <span class="text-gradient">Favorites</span></h2>
+      <p class="section-desc">Ranked by weighted reader satisfaction and minimum vote thresholds (&ge; 250 reviews).</p>
+    </div>
+  </section>
+
+  <!-- Interactive Category Tabs -->
+  <div class="category-tabs">
+    <button class="tab-btn active" data-category="all">⚡ All Top 50</button>
+    <button class="tab-btn" data-category="classics">📖 Classics & Literature</button>
+    <button class="tab-btn" data-category="philosophy">🧠 Philosophy & Ethics</button>
+    <button class="tab-btn" data-category="scifi">🚀 Sci-Fi & Speculative</button>
+    <button class="tab-btn" data-category="society">🌍 Society & Human Nature</button>
+    <button class="tab-btn" data-category="mystery">🔍 Mystery & Logic</button>
+  </div>
+
+  <!-- Books Grid -->
+  <main class="container">
+    <div class="books-grid">
+      {% for book in books %}
+        <article class="book-card" data-categories="{{ book.categories }}">
+          <div class="card-top">
+            <div class="book-cover-wrapper">
+              <img 
+                src="{{ book.image }}" 
+                alt="{{ book.name }}" 
+                class="book-cover" 
+                loading="lazy"
+                onerror="handleImageFallback(this, '{{ book.name|replace("'", "") }}')"
+              >
+            </div>
+            <!-- Study Shelf Bookmark Button -->
+            <button 
+              class="bookmark-btn" 
+              data-title="{{ book.name }}" 
+              data-author="{{ book.author }}" 
+              data-image="{{ book.image }}" 
+              data-rating="{{ book.rating }}" 
+              data-votes="{{ book.votes }}"
+              title="Add to Study Shelf"
+            >☆</button>
+          </div>
+
+          <div class="card-info">
+            <h3 class="book-title" title="{{ book.name }}">{{ book.name }}</h3>
+            <p class="book-author">by {{ book.author }}</p>
+
+            <div class="meta-row">
+              <span class="rating-badge">
+                <span>★</span>
+                <span>{{ book.rating }}</span>
+              </span>
+              <span class="votes-badge">{{ book.votes }} student votes</span>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <!-- 1-Click Recommendation Form -->
+            <form action="/recommend_books" method="POST" style="flex: 1;">
+              <input type="hidden" name="user_input" value="{{ book.name }}">
+              <button type="submit" class="btn-recommend" style="width: 100%;">
+                <span>🔍</span> Similar Books
+              </button>
+            </form>
+            <button 
+              type="button"
+              class="btn-ai-brief" 
+              data-title="{{ book.name }}" 
+              data-author="{{ book.author }}" 
+              title="View AI Concept Brief & Prompts"
+            >
+              <span>⚡ Brief</span>
+            </button>
+            <button 
+              type="button"
+              class="btn-flashcards" 
+              data-title="{{ book.name }}" 
+              data-author="{{ book.author }}" 
+              title="Interactive Active-Recall Flashcards"
+            >
+              <span>🎴 Quiz</span>
+            </button>
+            <button 
+              type="button"
+              class="btn-secondary cite-btn" 
+              data-title="{{ book.name }}" 
+              data-author="{{ book.author }}" 
+              data-year="{{ book.year if book.year else '2004' }}" 
+              data-publisher="{{ book.publisher if book.publisher else 'Academic Press' }}"
+              title="Generate APA, MLA, Chicago Citation"
+            >
+              📝 Cite
+            </button>
+            <a 
+              href="https://openlibrary.org/search?q={{ book.name }}" 
+              target="_blank" 
+              rel="noopener" 
+              class="btn-secondary" 
+              title="Look up Free Open Access / Preview on Open Library"
+            >
+              📖 Free
+            </a>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  </main>
+
+  <script src="/static/js/main.js"></script>
 </body>
 </html>
